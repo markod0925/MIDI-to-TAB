@@ -8,8 +8,18 @@ export interface MidiNoteEvent {
 }
 
 export interface MidiTrack {
+  name?: string;
+  channel?: number;
+  program?: number;
   isDrum: boolean;
   notes: MidiNoteEvent[];
+}
+
+export interface TempoEvent {
+  ticks: number;
+  time: number;
+  bpm: number;
+  microsecondsPerQuarter: number;
 }
 
 export interface TimeSignatureEvent {
@@ -22,6 +32,7 @@ export interface TimeSignatureEvent {
 export interface MidiSong {
   ppq: number;
   tracks: MidiTrack[];
+  tempos: TempoEvent[];
   timeSignatures: TimeSignatureEvent[];
   endTicks: number;
   ticksToSeconds: (ticks: number) => number;

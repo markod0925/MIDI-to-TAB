@@ -26,12 +26,14 @@
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "generate:examples": "node scripts/generate-midi-examples.mjs",
     "compare:ab": "npm run build && node scripts/compare-ab.mjs",
+    "benchmark:format": "npm run build && node scripts/benchmark-format-size.mjs",
     "test": "npm run build && node scripts/compare-ab.mjs --quick && node scripts/test-soft-mode.mjs",
     "test:soft": "npm run build && node scripts/test-soft-mode.mjs",
     "clean": "rm -rf dist comparison-output"
   },
   "dependencies": {
-    "@tonejs/midi": "^2.0.28"
+    "@tonejs/midi": "^2.0.28",
+    "protobufjs": "^8.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.14",

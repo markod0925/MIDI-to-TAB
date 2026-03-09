@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package guitarhelio.tab.v1;
+
+// Keep runtime dependencies small in mobile/game clients.
+option optimize_for = LITE_RUNTIME;
+
+// Shared binary format between MIDI-to-TAB and GuitarHelio.
+message GhTabFile {
+  // Breaking changes bump this number and package namespace.
+  uint32 schema_version = 1;
+  string toolchain_version = 2;
+
+  SongInfo song = 3;
+  Timeline timeline = 4;
+
+  // Canonical MIDI-like content, normalized and sorted.
+  repeated MidiTrack tracks = 5;
+
+  // One layer per playable difficulty.
+  repeated DifficultyLayer layers = 6;
+
+  // Optional SHA-256 of the source MIDI bytes (32 bytes).
+  bytes source_midi_sha256 = 7;
+}
+
+message SongInfo {
+  string song_id = 1;
+  string title = 2;
+  string artist = 3;
+  string source_name = 4;
+}
+
+message Timeline {
+  // Ticks per quarter note.
+  uint32 ppq = 1;
+  uint32 end_tick = 2;
+
+  repeated TempoChange tempo_map = 3;
+  repeated TimeSignatureChange time_signatures = 4;
+  repeated Marker markers = 5;
+}
+
+message TempoChange {
+  uint32 tick = 1;
+  // 500000 = 120 BPM.
+  uint32 microseconds_per_quarter = 2;
+}
+
+message TimeSignatureChange {
+  uint32 tick = 1;
+  uint32 numerator = 2;
+  uint32 denominator = 3;
+}
+
+message Marker {
+  uint32 tick = 1;
+  string name = 2;
+}
+
+message MidiTrack {
+  uint32 track_id = 1;
+  string name = 2;
+  uint32 midi_channel = 3; // 0-15
+  uint32 midi_program = 4; // 0-127
+  bool is_drum = 5;
+  TrackRole role = 6;
+
+  // Notes sorted by (start_tick, pitch, duration_tick).
+  // Store onset as delta to reduce file size.
+  repeated PackedNote notes = 7;
+}
+
+enum TrackRole {
+  TRACK_ROLE_UNSPECIFIED = 0;
+  TRACK_ROLE_LEAD = 1;
+  TRACK_ROLE_RHYTHM = 2;
+  TRACK_ROLE_BASS = 3;
+  TRACK_ROLE_DRUMS = 4;
+  TRACK_ROLE_OTHER = 5;
+}
+
+message PackedNote {
+  // Delta from previous note start tick in the same track.
+  uint32 delta_start_tick = 1;
+  uint32 duration_tick = 2;
+  uint32 pitch = 3; // MIDI 0-127
+  uint32 velocity = 4; // MIDI 0-127
+}
+
+message DifficultyLayer {
+  DifficultyLevel difficulty = 1;
+  string tuning_name = 2;
+  // Tuning as MIDI pitches, one per string.
+  repeated sint32 tuning_midi = 3;
+
+  // Events sorted by time; each event uses delta ticks.
+  repeated TabEvent events = 4;
+}
+
+enum DifficultyLevel {
+  DIFFICULTY_UNSPECIFIED = 0;
+  DIFFICULTY_EASY = 1;
+  DIFFICULTY_MEDIUM = 2;
+  DIFFICULTY_HARD = 3;
+}
+
+message TabEvent {
+  // Delta from previous tab event tick in this layer.
+  uint32 delta_tick = 1;
+
+  // Optional helpers for rendering or UI jumps.
+  uint32 measure_index = 2;
+  float measure_timing = 3; // 0.0..1.0
+  // 0 = unset, otherwise 1-based track id.
+  uint32 source_track_id = 4;
+
+  repeated TabNote notes = 5;
+
+  // Keep unset in production exports unless debugging is needed.
+  TabDiagnostics diagnostics = 6;
+}
+
+message TabNote {
+  uint32 string_index = 1; // 0-based
+  uint32 fret = 2;
+  uint32 pitch = 3; // Resolved MIDI pitch after mapping
+  uint32 sustain_tick = 4;
+
+  // 0 = unset, otherwise 1-based index inside source track notes.
+  uint32 source_note_index = 5;
+  NoteTechnique technique = 6;
+}
+
+enum NoteTechnique {
+  NOTE_TECHNIQUE_NONE = 0;
+  NOTE_TECHNIQUE_HAMMER_ON = 1;
+  NOTE_TECHNIQUE_PULL_OFF = 2;
+  NOTE_TECHNIQUE_SLIDE = 3;
+  NOTE_TECHNIQUE_BEND = 4;
+  NOTE_TECHNIQUE_PALM_MUTE = 5;
+  NOTE_TECHNIQUE_DEAD_NOTE = 6;
+}
+
+message TabDiagnostics {
+  repeated uint32 original_pitches = 1;
+  repeated uint32 merged_pitches = 2;
+  repeated uint32 kept_pitches = 3;
+  repeated uint32 dropped_pitches = 4;
+
+  uint32 dropped_notes_count = 5;
+  float dropped_weight = 6;
+  float drop_cost = 7;
+  string selected_subset_id = 8;
+  uint32 candidate_count = 9;
+}

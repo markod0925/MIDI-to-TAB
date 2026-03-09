@@ -11,6 +11,7 @@ A shared binary schema for interoperability between this project and GuitarHelio
 Design notes and encoding rules:
 
 - `docs/common-format.md`
+- `docs/guitarhelio-integration.md`
 
 ## What is included
 
@@ -84,6 +85,41 @@ const ascii = tab.toAsciiString();
 const json = tab.toJsonString();
 ```
 
+Encode/decode shared binary format (`GhTabFile`) for GuitarHelio:
+
+```ts
+import {
+  convertMidiFileToTabsByDifficulty,
+  decodeGhTabBinary,
+  encodeGhTabFromTabs,
+} from "midi-to-tab-js";
+
+const tabs = convertMidiFileToTabsByDifficulty("./examples/midi/01_single_note.mid");
+const binary = encodeGhTabFromTabs([tabs.easy, tabs.medium, tabs.hard], {
+  title: "single_note",
+  sourceName: "01_single_note.mid",
+});
+
+const decoded = decodeGhTabBinary(binary);
+console.log(decoded.layers.length); // 3
+```
+
+File I/O helpers:
+
+```ts
+import {
+  readGhTabBinaryFile,
+  writeGhTabFromTabs,
+} from "midi-to-tab-js";
+
+writeGhTabFromTabs("./tabs/song.ghlbin", [tabs.easy, tabs.medium, tabs.hard], {
+  title: "song",
+});
+
+const parsed = readGhTabBinaryFile("./tabs/song.ghlbin");
+console.log(parsed.schemaVersion); // 1
+```
+
 Soft-mode parameters are optional and can be overridden per conversion:
 
 ```ts
@@ -150,4 +186,10 @@ tabs.hard.writeAsciiFile("./tabs/song_hard.txt");
 
 ```bash
 npm test
+```
+
+## Format size benchmark (JSON vs binary)
+
+```bash
+npm run benchmark:format -- ./examples/midi/09_with_drums.mid
 ```

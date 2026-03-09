@@ -8,6 +8,7 @@ import type { DifficultyLevel } from "./types";
 export * from "./difficulty";
 export * from "./difficulty-presets";
 export * from "./fretboard";
+export * from "./gh-tab-format";
 export * from "./graph-utils";
 export * from "./midi";
 export * from "./midi-utils";

@@ -2,6 +2,16 @@
 
 TypeScript/JavaScript port of the core algorithm from [natecdr/tuttut](https://github.com/natecdr/tuttut), with the original Python implementation included for deterministic A/B output comparison.
 
+## Shared format for GuitarHelio
+
+A shared binary schema for interoperability between this project and GuitarHelio is available at:
+
+- `schemas/gh_tab.proto`
+
+Design notes and encoding rules:
+
+- `docs/common-format.md`
+
 ## What is included
 
 - `src/`: Node-ready TS implementation of the MIDI-to-TAB core algorithm
@@ -74,6 +84,37 @@ const ascii = tab.toAsciiString();
 const json = tab.toJsonString();
 ```
 
+Soft-mode parameters are optional and can be overridden per conversion:
+
+```ts
+import { convertMidiFileToTab } from "midi-to-tab-js";
+
+const tab = convertMidiFileToTab("./dirty.mid", {
+  difficulty: "easy",
+  allowNoteDrop: true,
+  velocityThreshold: 30,
+  minDurationTicks: 60,
+  onsetMergeWindowTicks: 24,
+  maxNotesPerEvent: 4,
+  maxSubsetCandidates: 20,
+  alpha: 0.8,
+  beta: 1.0,
+  dropPenalty: 0.3,
+  fallbackStrategy: "greedy_drop",
+});
+```
+
+When `includeEventDiagnostics: true`, each note event may include:
+- `originalNotes`
+- `mergedNotes`
+- `keptNotes`
+- `droppedNotes`
+- `droppedNotesCount`
+- `droppedWeight`
+- `dropCost`
+- `selectedSubsetId`
+- `candidateCount`
+
 Node file-path convenience:
 
 ```ts
@@ -100,4 +141,13 @@ tabs.hard.writeAsciiFile("./tabs/song_hard.txt");
 ## Notes
 
 - The algorithm targets the same behavior as the original Python code.
+- Processing order for noisy MIDI is `merge onset -> filter -> polyphony cap -> subset/drop -> HMM`.
 - Complex multi-channel MIDI can still produce suboptimal tabs, same as the upstream project.
+
+## Validation
+
+- Quick parity + soft-mode tests:
+
+```bash
+npm test
+```

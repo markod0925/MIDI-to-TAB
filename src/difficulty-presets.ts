@@ -13,6 +13,19 @@ export const DIFFICULTY_PRESETS: Record<DifficultyLevel, DifficultyPreset> = {
       maxFretSpan: 4,
       maxReachFret: 12,
     },
+    soft: {
+      allowNoteDrop: true,
+      velocityThreshold: 35,
+      minDurationTicks: 70,
+      onsetMergeWindowTicks: 30,
+      maxNotesPerEvent: 4,
+      maxSubsetCandidates: 24,
+      alpha: 0.7,
+      beta: 1.1,
+      dropPenalty: 0.25,
+      fallbackStrategy: "greedy_drop",
+      includeEventDiagnostics: true,
+    },
   },
   medium: {
     level: "medium",
@@ -25,6 +38,19 @@ export const DIFFICULTY_PRESETS: Record<DifficultyLevel, DifficultyPreset> = {
     fretboard: {
       maxFretSpan: 5,
       maxReachFret: 20,
+    },
+    soft: {
+      allowNoteDrop: false,
+      velocityThreshold: 0,
+      minDurationTicks: 0,
+      onsetMergeWindowTicks: 0,
+      maxNotesPerEvent: 6,
+      maxSubsetCandidates: 16,
+      alpha: 0.5,
+      beta: 1,
+      dropPenalty: 0.4,
+      fallbackStrategy: "none",
+      includeEventDiagnostics: false,
     },
   },
   hard: {
@@ -39,6 +65,19 @@ export const DIFFICULTY_PRESETS: Record<DifficultyLevel, DifficultyPreset> = {
       maxFretSpan: 6,
       maxReachFret: 20,
     },
+    soft: {
+      allowNoteDrop: false,
+      velocityThreshold: 0,
+      minDurationTicks: 0,
+      onsetMergeWindowTicks: 0,
+      maxNotesPerEvent: 6,
+      maxSubsetCandidates: 10,
+      alpha: 0.25,
+      beta: 0.55,
+      dropPenalty: 0.9,
+      fallbackStrategy: "none",
+      includeEventDiagnostics: false,
+    },
   },
 };
 
@@ -50,5 +89,6 @@ export function getDifficultyPreset(level: DifficultyLevel = "medium"): Difficul
     level: preset.level,
     weights: { ...preset.weights },
     fretboard: { ...preset.fretboard },
+    soft: { ...preset.soft },
   };
 }

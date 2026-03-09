@@ -1,0 +1,43 @@
+{
+  "name": "midi-to-tab-js",
+  "version": "0.1.0",
+  "description": "TypeScript/JavaScript MIDI to tablature converter ported from natecdr/tuttut with Python A/B harness",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "python_original",
+    "examples",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "generate:examples": "node scripts/generate-midi-examples.mjs",
+    "compare:ab": "npm run build && node scripts/compare-ab.mjs",
+    "test": "npm run build && node scripts/compare-ab.mjs --quick",
+    "clean": "rm -rf dist comparison-output"
+  },
+  "dependencies": {
+    "@tonejs/midi": "^2.0.28"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

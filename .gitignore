@@ -1,0 +1,6 @@
+node_modules/
+dist/
+comparison-output/
+__pycache__/
+*.pyc
+.venv/

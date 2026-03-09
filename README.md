@@ -12,7 +12,7 @@ TypeScript/JavaScript port of the core algorithm from [natecdr/tuttut](https://g
   - ASCII tab rendering
 - `python_original/`: vendored Python baseline (original `tuttut.logic` modules)
 - `examples/midi/`: 10 generated MIDI fixtures for comparison
-- `scripts/compare-ab.ts`: Python vs TS output comparator
+- `scripts/compare-ab.mjs`: Python vs TS output comparator
 
 ## Install
 
@@ -67,6 +67,7 @@ import { convertMidiArrayBufferToTab } from "midi-to-tab-js";
 
 const tab = convertMidiArrayBufferToTab(midiArrayBuffer, {
   name: "song",
+  difficulty: "easy", // "easy" | "medium" | "hard"
 });
 
 const ascii = tab.toAsciiString();
@@ -80,6 +81,20 @@ import { convertMidiFileToTab } from "midi-to-tab-js";
 
 const tab = convertMidiFileToTab("./examples/midi/01_single_note.mid");
 console.log(tab.toAsciiString());
+```
+
+Generate all three difficulties from one MIDI:
+
+```ts
+import { convertMidiFileToTabsByDifficulty } from "midi-to-tab-js";
+
+const tabs = convertMidiFileToTabsByDifficulty("./examples/midi/01_single_note.mid", {
+  name: "song",
+});
+
+tabs.easy.writeAsciiFile("./tabs/song_easy.txt");
+tabs.medium.writeAsciiFile("./tabs/song_medium.txt");
+tabs.hard.writeAsciiFile("./tabs/song_hard.txt");
 ```
 
 ## Notes

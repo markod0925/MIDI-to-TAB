@@ -58,6 +58,19 @@ export interface TabWeights {
   n_changed_strings: number;
 }
 
+export type DifficultyLevel = "easy" | "medium" | "hard";
+
+export interface FretboardConstraints {
+  maxFretSpan: number;
+  maxReachFret: number;
+}
+
+export interface DifficultyPreset {
+  level: DifficultyLevel;
+  weights: TabWeights;
+  fretboard: FretboardConstraints;
+}
+
 export interface TimelineEventData {
   notes?: MidiNoteEvent[];
   time_signature?: TimeSignatureEvent;

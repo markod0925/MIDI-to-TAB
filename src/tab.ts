@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { getDifficultyPreset } from "./difficulty-presets";
 import { computeIsolatedPathDifficulty } from "./difficulty";
 import { Fretboard } from "./fretboard";
 import {
@@ -22,6 +23,8 @@ import type {
   TabWeights,
   TimeSignatureEvent,
   TimelineEventData,
+  DifficultyLevel,
+  FretboardConstraints,
 } from "./types";
 
 interface BuildHmmResult {
@@ -31,15 +34,10 @@ interface BuildHmmResult {
   initialProbabilities: number[] | null;
 }
 
-const DEFAULT_WEIGHTS: TabWeights = {
-  b: 1,
-  height: 1,
-  length: 1,
-  n_changed_strings: 1,
-};
-
 export interface TabOptions {
+  difficulty?: DifficultyLevel;
   weights?: TabWeights;
+  fretboardConstraints?: Partial<FretboardConstraints>;
   outputDir?: string;
 }
 
@@ -47,6 +45,7 @@ export class Tab {
   readonly name: string;
   readonly tuning: Tuning;
   readonly midi: MidiSong;
+  readonly difficulty: DifficultyLevel;
   readonly weights: TabWeights;
   readonly outputDir?: string;
   readonly timeSignatures: TimeSignatureEvent[];
@@ -57,17 +56,23 @@ export class Tab {
   readonly tab: TabJson;
 
   constructor(name: string, tuning: Tuning, midi: MidiSong, options: TabOptions = {}) {
+    const preset = getDifficultyPreset(options.difficulty ?? "medium");
+
     this.name = name;
     this.tuning = tuning;
     this.midi = midi;
-    this.weights = options.weights ?? DEFAULT_WEIGHTS;
+    this.difficulty = preset.level;
+    this.weights = options.weights ?? preset.weights;
     this.outputDir = options.outputDir;
     this.timeSignatures =
       midi.timeSignatures.length > 0
         ? midi.timeSignatures
         : [{ numerator: 4, denominator: 4, ticks: 0, time: 0 }];
     this.nstrings = tuning.nstrings;
-    this.fretboard = new Fretboard(tuning);
+    this.fretboard = new Fretboard(tuning, {
+      ...preset.fretboard,
+      ...(options.fretboardConstraints ?? {}),
+    });
     this.timeline = this.buildTimeline();
     this.measures = [];
 

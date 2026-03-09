@@ -1,10 +1,13 @@
 import { findValidPaths } from "./graph-utils";
 import { removeDuplicateNotes, transposeNote } from "./midi-utils";
 import { Note, Tuning } from "./theory";
+import type { FretboardConstraints } from "./types";
 
 const DEFAULT_SCALE_LENGTH = 650;
 const FRET_SCALE_DIVISOR = 17.817;
-const MAX_FRET_SPAN = 5;
+const DEFAULT_MAX_FRET_SPAN = 5;
+
+export interface FretboardOptions extends Partial<FretboardConstraints> {}
 
 function permutations<T>(input: T[]): T[][] {
   if (input.length <= 1) {
@@ -45,13 +48,17 @@ export class Fretboard {
   readonly nstrings: number;
   readonly scaleLength: number;
   readonly positions: Map<Note, [number, number]>;
+  readonly maxFretSpan: number;
+  readonly maxReachFret: number;
   private readonly pitchIndex: Map<number, Note[]>;
   private readonly fingeringCache: Map<string, Note[][]>;
 
-  constructor(tuning: Tuning) {
+  constructor(tuning: Tuning, options: FretboardOptions = {}) {
     this.tuning = tuning;
     this.nstrings = tuning.nstrings;
     this.scaleLength = DEFAULT_SCALE_LENGTH;
+    this.maxFretSpan = options.maxFretSpan ?? DEFAULT_MAX_FRET_SPAN;
+    this.maxReachFret = options.maxReachFret ?? tuning.nfrets;
     this.positions = this.buildPositions();
     this.pitchIndex = this.buildPitchIndex();
     this.fingeringCache = new Map();
@@ -89,7 +96,11 @@ export class Fretboard {
   }
 
   getSpecificNoteOptions(note: Note): Note[] {
-    return this.pitchIndex.get(note.pitch) ?? [];
+    const options = this.pitchIndex.get(note.pitch) ?? [];
+    if (this.maxReachFret >= this.tuning.nfrets) {
+      return options;
+    }
+    return options.filter((option) => positionOf(this.positions, option)[1] <= this.maxReachFret);
   }
 
   getPossibleFingerings(noteOptions: Note[][]): Note[][] {
@@ -132,7 +143,9 @@ export class Fretboard {
   }
 
   fixOobNotes(notes: Note[], preserveHighestNote = false): Note[] {
-    let [minPossiblePitch, maxPossiblePitch] = this.tuning.getPitchBounds();
+    const stringPitches = this.tuning.strings.map((string) => string.pitch);
+    let minPossiblePitch = Math.min(...stringPitches);
+    let maxPossiblePitch = Math.max(...stringPitches) + this.maxReachFret;
 
     if (preserveHighestNote && notes.length > 0) {
       const highestPitchBefore = Math.max(...notes.map((note) => note.pitch));
@@ -199,10 +212,13 @@ export class Fretboard {
       .filter((fret) => fret !== 0);
 
     const maxFretSpan =
-      usedFrets.length > 0 ? Math.max(...usedFrets) - Math.min(...usedFrets) < MAX_FRET_SPAN : true;
+      usedFrets.length > 0 ? Math.max(...usedFrets) - Math.min(...usedFrets) < this.maxFretSpan : true;
 
+    const withinReach = fingering.every(
+      (note) => positionOf(this.positions, note)[1] <= this.maxReachFret,
+    );
     const rightLength = fingering.length <= noteArrays.length;
-    return onePerString && maxFretSpan && rightLength;
+    return onePerString && maxFretSpan && withinReach && rightLength;
   }
 
   getFingeringCacheSize(): number {

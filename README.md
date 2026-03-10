@@ -59,6 +59,8 @@ python -m pip install -r python_original/requirements.txt
 npm run compare:ab
 ```
 
+The JS side of the comparator uses `difficulty: "hard"` as the default legacy baseline.
+
 If Python is in a custom location, set `PYTHON`:
 
 ```bash
@@ -120,6 +122,29 @@ const parsed = readGhTabBinaryFile("./tabs/song.ghlbin");
 console.log(parsed.schemaVersion); // 1
 ```
 
+Single-layer GuitarHelio binary (`easy`) with constrained playable positions:
+
+```ts
+import {
+  convertMidiFileToTab,
+  writeGhTabFromTab,
+} from "midi-to-tab-js";
+
+const tab = convertMidiFileToTab("./examples/midi/la_regina_guerriera.mid", {
+  name: "la_regina_guerriera_easy_56_057",
+  difficulty: "easy",
+  fretboardConstraints: {
+    allowedStrings: [5, 6],
+    allowedFrets: [0, 5, 6, 7],
+  },
+});
+
+writeGhTabFromTab("./tabs/la_regina_guerriera_easy_56_057.ghlbin", tab, {
+  title: "la_regina_guerriera_easy_56_057",
+  sourceName: "la_regina_guerriera.mid",
+});
+```
+
 Soft-mode parameters are optional and can be overridden per conversion:
 
 ```ts
@@ -137,6 +162,20 @@ const tab = convertMidiFileToTab("./dirty.mid", {
   beta: 1.0,
   dropPenalty: 0.3,
   fallbackStrategy: "greedy_drop",
+});
+```
+
+Constrain playable positions (applies before TAB extraction by dropping MIDI notes that cannot be mapped):
+
+```ts
+import { convertMidiFileToTabsByDifficulty } from "midi-to-tab-js";
+
+const tabs = convertMidiFileToTabsByDifficulty("./song.mid", {
+  name: "song",
+  fretboardConstraints: {
+    allowedStrings: [5, 6], // 1-based string numbers
+    allowedFrets: [0, 5, 6, 7],
+  },
 });
 ```
 

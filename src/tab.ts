@@ -180,10 +180,20 @@ export class Tab {
       const aggregated = this.aggregateClusterNotes(cluster);
       const filtered = aggregated.filter((note) => {
         const durationTicks = note.endTicks - note.startTicks;
-        return (
+        const passesBaseFilters =
           note.velocity >= this.softOptions.velocityThreshold &&
-          durationTicks >= this.softOptions.minDurationTicks
-        );
+          durationTicks >= this.softOptions.minDurationTicks;
+
+        if (!passesBaseFilters) {
+          return false;
+        }
+
+        // When explicit string/fret filters are configured, drop notes that cannot be mapped.
+        if (this.fretboard.hasExplicitPositionFilter) {
+          return this.fretboard.hasPlayablePositionForPitch(note.pitch);
+        }
+
+        return true;
       });
 
       if (filtered.length === 0) {

@@ -50,8 +50,11 @@ export class Fretboard {
   readonly positions: Map<Note, [number, number]>;
   readonly maxFretSpan: number;
   readonly maxReachFret: number;
+  readonly hasExplicitPositionFilter: boolean;
   private readonly pitchIndex: Map<number, Note[]>;
   private readonly fingeringCache: Map<string, Note[][]>;
+  private readonly allowedStringSet: Set<number> | null;
+  private readonly allowedFretSet: Set<number> | null;
 
   constructor(tuning: Tuning, options: FretboardOptions = {}) {
     this.tuning = tuning;
@@ -59,9 +62,70 @@ export class Fretboard {
     this.scaleLength = DEFAULT_SCALE_LENGTH;
     this.maxFretSpan = options.maxFretSpan ?? DEFAULT_MAX_FRET_SPAN;
     this.maxReachFret = options.maxReachFret ?? tuning.nfrets;
+    this.allowedStringSet = this.normalizeAllowedStrings(options.allowedStrings);
+    this.allowedFretSet = this.normalizeAllowedFrets(options.allowedFrets);
+    this.hasExplicitPositionFilter =
+      Array.isArray(options.allowedStrings) || Array.isArray(options.allowedFrets);
     this.positions = this.buildPositions();
     this.pitchIndex = this.buildPitchIndex();
     this.fingeringCache = new Map();
+  }
+
+  private normalizeAllowedStrings(values: number[] | undefined): Set<number> | null {
+    if (!Array.isArray(values)) {
+      return null;
+    }
+
+    const normalized = new Set<number>();
+    for (const value of values) {
+      const stringNumber = Math.trunc(value);
+      if (!Number.isFinite(stringNumber) || stringNumber < 1 || stringNumber > this.nstrings) {
+        throw new Error(
+          `Invalid allowed string '${value}'. Expected integers in range 1..${this.nstrings}.`,
+        );
+      }
+      normalized.add(stringNumber - 1);
+    }
+
+    return normalized;
+  }
+
+  private normalizeAllowedFrets(values: number[] | undefined): Set<number> | null {
+    if (!Array.isArray(values)) {
+      return null;
+    }
+
+    const normalized = new Set<number>();
+    for (const value of values) {
+      const fret = Math.trunc(value);
+      if (!Number.isFinite(fret) || fret < 0 || fret > this.tuning.nfrets) {
+        throw new Error(
+          `Invalid allowed fret '${value}'. Expected integers in range 0..${this.tuning.nfrets}.`,
+        );
+      }
+      normalized.add(fret);
+    }
+
+    return normalized;
+  }
+
+  private isPositionAllowed(position: [number, number]): boolean {
+    const [string, fret] = position;
+    if (fret > this.maxReachFret) {
+      return false;
+    }
+    if (this.allowedStringSet && !this.allowedStringSet.has(string)) {
+      return false;
+    }
+    if (this.allowedFretSet && !this.allowedFretSet.has(fret)) {
+      return false;
+    }
+    return true;
+  }
+
+  hasPlayablePositionForPitch(pitch: number): boolean {
+    const options = this.pitchIndex.get(pitch) ?? [];
+    return options.some((option) => this.isPositionAllowed(positionOf(this.positions, option)));
   }
 
   private buildPositions(): Map<Note, [number, number]> {
@@ -97,10 +161,7 @@ export class Fretboard {
 
   getSpecificNoteOptions(note: Note): Note[] {
     const options = this.pitchIndex.get(note.pitch) ?? [];
-    if (this.maxReachFret >= this.tuning.nfrets) {
-      return options;
-    }
-    return options.filter((option) => positionOf(this.positions, option)[1] <= this.maxReachFret);
+    return options.filter((option) => this.isPositionAllowed(positionOf(this.positions, option)));
   }
 
   getPossibleFingerings(noteOptions: Note[][]): Note[][] {
@@ -214,8 +275,8 @@ export class Fretboard {
     const maxFretSpan =
       usedFrets.length > 0 ? Math.max(...usedFrets) - Math.min(...usedFrets) < this.maxFretSpan : true;
 
-    const withinReach = fingering.every(
-      (note) => positionOf(this.positions, note)[1] <= this.maxReachFret,
+    const withinReach = fingering.every((note) =>
+      this.isPositionAllowed(positionOf(this.positions, note)),
     );
     const rightLength = fingering.length <= noteArrays.length;
     return onePerString && maxFretSpan && withinReach && rightLength;

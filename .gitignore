@@ -4,3 +4,11 @@ comparison-output/
 __pycache__/
 *.pyc
 .venv/
+tabs/la_regina_guerriera_56_057_easy.txt
+tabs/la_regina_guerriera_56_057_hard.txt
+tabs/la_regina_guerriera_56_057_medium.txt
+tabs/la_regina_guerriera_easy.txt
+tabs/la_regina_guerriera_easy_56_057.ghlbin
+tabs/la_regina_guerriera_hard.txt
+tabs/la_regina_guerriera_medium.txt
+examples/midi/la_regina_guerriera.mid

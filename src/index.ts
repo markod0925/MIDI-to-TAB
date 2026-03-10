@@ -3,7 +3,7 @@ import { DIFFICULTY_LEVELS } from "./difficulty-presets";
 import { midiFromArrayBuffer, midiFromFile } from "./midi";
 import { Tab, type TabOptions } from "./tab";
 import { Tuning } from "./theory";
-import type { DifficultyLevel } from "./types";
+import type { DifficultyLevel, FretboardConstraints } from "./types";
 
 export * from "./difficulty";
 export * from "./difficulty-presets";
@@ -25,6 +25,7 @@ export interface DifficultyBatchOptions {
   tuning?: Tuning;
   outputDir?: string;
   name?: string;
+  fretboardConstraints?: Partial<FretboardConstraints>;
 }
 
 export function convertMidiFileToTab(filePath: string, options: ConvertOptions = {}): Tab {
@@ -56,14 +57,17 @@ export function convertMidiFileToTabsByDifficulty(
     easy: new Tab(`${baseName}_easy`, tuning, midi, {
       difficulty: "easy",
       outputDir: options.outputDir,
+      fretboardConstraints: options.fretboardConstraints,
     }),
     medium: new Tab(`${baseName}_medium`, tuning, midi, {
       difficulty: "medium",
       outputDir: options.outputDir,
+      fretboardConstraints: options.fretboardConstraints,
     }),
     hard: new Tab(`${baseName}_hard`, tuning, midi, {
       difficulty: "hard",
       outputDir: options.outputDir,
+      fretboardConstraints: options.fretboardConstraints,
     }),
   };
 }
@@ -81,6 +85,7 @@ export function convertMidiArrayBufferToTabsByDifficulty(
     tabs[level] = new Tab(`${baseName}_${level}`, tuning, midi, {
       difficulty: level,
       outputDir: options.outputDir,
+      fretboardConstraints: options.fretboardConstraints,
     });
   }
 

@@ -164,11 +164,59 @@ function testDirtyIntegrationAndPerformance() {
   assert.ok(elapsedMs < 15000, `High-polyphony benchmark too slow: ${elapsedMs}ms`);
 }
 
+function testPlayablePositionConstraints() {
+  const midi = makeMidi((track) => {
+    const pitches = [40, 45, 47, 50, 52, 55, 59, 64];
+    for (let i = 0; i < pitches.length; i++) {
+      track.addNote({
+        midi: pitches[i],
+        ticks: i * (PPQ / 2),
+        durationTicks: PPQ / 3,
+        velocity: 0.9,
+      });
+    }
+  });
+
+  const data = toArrayBuffer(midi.toArray());
+
+  const unconstrained = convertMidiArrayBufferToTab(data, {
+    name: "constraints_off",
+    difficulty: "hard",
+  });
+  const constrained = convertMidiArrayBufferToTab(data, {
+    name: "constraints_on",
+    difficulty: "hard",
+    fretboardConstraints: {
+      allowedStrings: [5, 6],
+      allowedFrets: [0, 5, 6, 7],
+    },
+  });
+
+  const constrainedNotes = constrained.tab.measures
+    .flatMap((measure) => measure.events)
+    .flatMap((event) => event.notes ?? []);
+
+  assert.ok(constrainedNotes.length > 0, "Expected constrained conversion to keep playable notes.");
+  assert.ok(
+    constrainedNotes.every((note) => note.string + 1 === 5 || note.string + 1 === 6),
+    "Constrained conversion must keep only selected strings.",
+  );
+  assert.ok(
+    constrainedNotes.every((note) => [0, 5, 6, 7].includes(note.fret)),
+    "Constrained conversion must keep only selected frets.",
+  );
+  assert.ok(
+    totalOutputNotes(constrained) < totalOutputNotes(unconstrained),
+    "Constrained conversion should drop notes outside playable positions.",
+  );
+}
+
 function main() {
   testMergeBeforeFilter();
   testTemporalStabilityInRanking();
   testSubsetCapAndDropCost();
   testDirtyIntegrationAndPerformance();
+  testPlayablePositionConstraints();
   process.stdout.write("Soft-mode tests: PASS\n");
 }
 

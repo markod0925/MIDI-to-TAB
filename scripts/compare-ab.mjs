@@ -108,7 +108,10 @@ for (const midiFile of midiFiles) {
   }
 
   try {
-    const tab = convertMidiFileToTab(midiPath, { name: midiFile.replace(/\.mid$/i, "") });
+    const tab = convertMidiFileToTab(midiPath, {
+      name: midiFile.replace(/\.mid$/i, ""),
+      difficulty: "hard",
+    });
     tab.writeAsciiFile(jsOutput);
   } catch (error) {
     results.push({

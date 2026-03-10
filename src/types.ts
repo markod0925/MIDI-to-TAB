@@ -75,6 +75,10 @@ export type DifficultyLevel = "easy" | "medium" | "hard";
 export interface FretboardConstraints {
   maxFretSpan: number;
   maxReachFret: number;
+  // 1-based string numbers (e.g. [5, 6] for low A/E on standard guitar).
+  allowedStrings?: number[];
+  // Absolute fret numbers (e.g. [0, 5, 6, 7]).
+  allowedFrets?: number[];
 }
 
 export interface DifficultyPreset {
